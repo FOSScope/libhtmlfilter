@@ -140,3 +140,14 @@ fn generate_output_path(url: &str, output_dir: &str) -> String {
         .as_secs();
     format!("{}/{}_{}-{}.html", output_dir, domain, path, timestamp)
 }
+
+#[test]
+fn filter_example() {
+    let url = "https://itsfoss.com/ollama/";
+    let output_dir = "output";
+
+    //正向过滤
+    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "figure", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child", ];
+    let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
+
+    process_url(url, &tags, &classes, output_dir);
