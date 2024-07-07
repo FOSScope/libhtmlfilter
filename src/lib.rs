@@ -151,3 +151,4 @@ fn filter_example() {
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
     process_url(url, &tags, &classes, output_dir);
+}
