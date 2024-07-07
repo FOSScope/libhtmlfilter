@@ -1,0 +1,16 @@
+[package]
+name = "libhtmlfilter"
+edition = "2021"
+version = "0.1.0"
+authors = ["Cysnies <official@tcea.top>"]
+license = "MIT"
+description = "A tool to filter html by tags and classes"
+readme = "README.md"
+homepage = "https://github.com/fosscope/libhtmlfilter"
+repository = "https://github.com/fosscope/libhtmlfilter"
+keywords = ["html", "filter", "lib"]
+categories = ["lib"]
+
+[dependencies]
+reqwest = { version = "0.11", features = ["blocking"] }
+kuchiki = "0.8"
