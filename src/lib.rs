@@ -8,6 +8,16 @@ use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
+pub fn reverse_process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
+pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
 
@@ -25,33 +35,12 @@ pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str)
         }
     }
 
-    save_filtered_html(&document, url, output_dir);
-}
-
-pub fn reverse_process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let response = get(url).expect("Failed to fetch URL");
-    let content = response.text().expect("Failed to read response text");
-
-    let document = parse_html().one(content);
-
-    if !tags.is_empty() {
-        for tag in tags {
-            reverse_filter_tags(&document, &format!("{}", tag));
-        }
-    }
-
-    if !classes.is_empty() {
-        for class in classes {
-            reverse_filter_classes(&document, class);
-        }
-    }
-
-    save_filtered_html(&document, url, output_dir);
-}
-
-fn save_filtered_html(document: &NodeRef, url: &str, output_dir: &str) {
     let filtered_html = document.to_string();
-    let filtered_html = remove_empty_lines(filtered_html);
+    remove_empty_lines(filtered_html)
+}
+
+fn save_filtered_html(filtered_html: &str, url: &str, output_dir: &str) {
+    let filtered_html = remove_empty_lines(filtered_html.to_string());
 
     let output_path = generate_output_path(url, output_dir);
     fs::create_dir_all(output_dir).expect("Failed to create output directory");
@@ -90,39 +79,6 @@ fn filter_classes(document: &NodeRef, class: &str) {
     }
 }
 
-fn reverse_filter_tags(document: &NodeRef, rule: &str) {
-    let mut nodes_to_keep: Vec<NodeRef> = Vec::new();
-
-    for element in document.select(rule).expect("Failed to select nodes") {
-        nodes_to_keep.push(element.as_node().clone());
-    }
-
-    for node in document.descendants().collect::<Vec<_>>() {
-        if !nodes_to_keep.contains(&node) {
-            node.detach();
-        }
-    }
-}
-
-fn reverse_filter_classes(document: &NodeRef, class: &str) {
-    let mut nodes_to_keep: Vec<NodeRef> = Vec::new();
-
-    for element in document.select("*").expect("Failed to select nodes") {
-        if let Some(attr) = element.attributes.borrow().get("class") {
-            let class_list: Vec<&str> = attr.split_whitespace().collect();
-            if class_list.iter().any(|&c| c == class) {
-                nodes_to_keep.push(element.as_node().clone());
-            }
-        }
-    }
-
-    for node in document.descendants().collect::<Vec<_>>() {
-        if !nodes_to_keep.contains(&node) {
-            node.detach();
-        }
-    }
-}
-
 fn remove_empty_lines(html: String) -> String {
     html.lines()
         .filter(|line| !line.trim().is_empty())
@@ -142,12 +98,11 @@ fn generate_output_path(url: &str, output_dir: &str) -> String {
 }
 
 #[test]
-fn filter_example() {
+fn test_save_html() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output";
 
-    //正向过滤
-    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "figure", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child", ];
+    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "figure", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
     process_url(url, &tags, &classes, output_dir);
