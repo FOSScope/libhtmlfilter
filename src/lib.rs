@@ -7,21 +7,7 @@ use std::fs::File;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html(url, tags, classes);
-    save_filtered_html(&filtered_html, url, output_dir);
-}
-
-pub fn reverse_process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html(url, tags, classes);
-    save_filtered_html(&filtered_html, url, output_dir);
-}
-
-pub fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
-    save_filtered_html(&filtered_html, url, output_dir);
-}
-
+/// 获取过滤后的HTML内容
 pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
@@ -44,6 +30,7 @@ pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
     remove_empty_lines(filtered_html)
 }
 
+/// 获取过滤后的HTML内容，并更新相对路径为绝对路径
 pub fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
@@ -62,13 +49,41 @@ pub fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> 
         }
     }
 
-    // Update relative paths to absolute paths
+    // 更新相对路径为绝对路径
     update_relative_paths(&document, url);
 
     let filtered_html = document.to_string();
     remove_empty_lines(filtered_html)
 }
 
+/// 获取过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
+pub fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], classes: &[&str]) -> String {
+    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
+    let document = parse_html().one(filtered_html);
+    remove_ref_from_urls(&document);
+    let filtered_html = document.to_string();
+    remove_empty_lines(filtered_html)
+}
+
+/// 处理URL并保存过滤后的HTML内容
+pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
+/// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径
+pub fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
+/// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
+pub fn process_url_full_removeref(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html_fullurl_removeref(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
+/// 保存过滤后的HTML内容到指定目录
 fn save_filtered_html(filtered_html: &str, url: &str, output_dir: &str) {
     let filtered_html = remove_empty_lines(filtered_html.to_string());
 
@@ -80,6 +95,7 @@ fn save_filtered_html(filtered_html: &str, url: &str, output_dir: &str) {
     println!("Filtered HTML for {} saved to {}", url, output_path);
 }
 
+/// 过滤指定标签
 fn filter_tags(document: &NodeRef, rule: &str) {
     let mut nodes_to_remove: Vec<NodeRef> = Vec::new();
 
@@ -92,6 +108,7 @@ fn filter_tags(document: &NodeRef, rule: &str) {
     }
 }
 
+/// 过滤指定类名
 fn filter_classes(document: &NodeRef, class: &str) {
     let mut nodes_to_remove: Vec<NodeRef> = Vec::new();
 
@@ -109,6 +126,7 @@ fn filter_classes(document: &NodeRef, class: &str) {
     }
 }
 
+/// 更新相对路径为绝对路径
 fn update_relative_paths(document: &NodeRef, base_url: &str) {
     let base_url = Url::parse(base_url).expect("Failed to parse base URL");
 
@@ -129,9 +147,28 @@ fn update_relative_paths(document: &NodeRef, base_url: &str) {
             }
         }
     }
-
 }
 
+/// 移除URL中的引用参数
+fn remove_ref_from_urls(document: &NodeRef) {
+    for a in document.select("a").expect("Failed to select a tags") {
+        let mut attributes = a.attributes.borrow_mut();
+        if let Some(href) = attributes.get("href") {
+            let new_href = href.split("?ref=").next().unwrap_or(href).to_string();
+            attributes.insert("href", new_href);
+        }
+    }
+
+    for img in document.select("img").expect("Failed to select img tags") {
+        let mut attributes = img.attributes.borrow_mut();
+        if let Some(src) = attributes.get("src") {
+            let new_src = src.split("?ref=").next().unwrap_or(src).to_string();
+            attributes.insert("src", new_src);
+        }
+    }
+}
+
+/// 移除空行
 fn remove_empty_lines(html: String) -> String {
     html.lines()
         .filter(|line| !line.trim().is_empty())
@@ -139,6 +176,7 @@ fn remove_empty_lines(html: String) -> String {
         .join("\n")
 }
 
+/// 生成输出路径
 fn generate_output_path(url: &str, output_dir: &str) -> String {
     let uri = Url::parse(url).expect("Failed to parse URL");
     let domain = uri.host_str().unwrap_or("unknown_domain");
@@ -170,4 +208,15 @@ fn test_process_url_full() {
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
     process_url_full(url, &tags, &classes, output_dir);
+}
+
+#[test]
+fn test_process_url_full_removeref() {
+    let url = "https://itsfoss.com/ollama/";
+    let output_dir = "output_fullurl_removeref";
+
+    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
+    let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
+
+    process_url_full_removeref(url, &tags, &classes, output_dir);
 }

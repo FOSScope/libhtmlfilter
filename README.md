@@ -1,120 +1,293 @@
-### 文档
+# LibHTMLFilter
 
-#### 概述
+本库提供了一系列函数，用于从指定URL获取HTML内容，并根据用户定义的标签和类名进行过滤，同时支持将相对路径更新为绝对路径，以及移除URL中的引用参数。以下是每个函数的详细说明和使用示例。
 
-本Rust程序用于从指定的URL下载HTML内容，并根据给定的标签和类名过滤HTML内容，然后将过滤后的HTML保存到指定的输出目录中。程序使用了`reqwest`库进行HTTP请求，`kuchiki`库进行HTML解析和操作，以及标准库中的文件操作和时间处理功能。
+#### 1. `get_filtered_html`
 
-#### 函数详解
+**功能描述**：获取过滤后的HTML内容。
 
-##### `process_url`
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
 
+**返回值**：过滤后的HTML内容字符串。
+
+**示例**：
 ```rust
-pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str)
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let filtered_html = get_filtered_html(url, &tags, &classes);
+println!("{}", filtered_html);
 ```
 
-- **描述**: 处理给定的URL，获取并保存过滤后的HTML内容。
-- **参数**:
-  - `url`: 要处理的URL字符串。
-  - `tags`: 要过滤的HTML标签数组。
-  - `classes`: 要过滤的HTML类名数组。
-  - `output_dir`: 保存过滤后HTML的目录路径。
-- **行为**: 调用`get_filtered_html`获取过滤后的HTML，然后调用`save_filtered_html`保存结果。
+#### 2. `get_filtered_html_fullurl`
 
-##### `reverse_process_url`
+**功能描述**：获取过滤后的HTML内容，并更新相对路径为绝对路径。
 
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
+
+**返回值**：过滤后的HTML内容字符串，且所有相对路径已更新为绝对路径。
+
+**示例**：
 ```rust
-pub fn reverse_process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str)
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let filtered_html = get_filtered_html_fullurl(url, &tags, &classes);
+println!("{}", filtered_html);
 ```
 
-- **描述**: 与`process_url`功能相同，但用于反向处理（保留指定标签和类名以外的内容）。
-- **参数**: 同`process_url`。
-- **行为**: 调用`get_filtered_html`获取过滤后的HTML，然后调用`save_filtered_html`保存结果。
+#### 3. `get_filtered_html_fullurl_removeref`
 
-##### `get_filtered_html`
+**功能描述**：获取过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数。
 
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
+
+**返回值**：过滤后的HTML内容字符串，所有相对路径已更新为绝对路径，且移除了URL中的引用参数。
+
+**示例**：
 ```rust
-pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let filtered_html = get_filtered_html_fullurl_removeref(url, &tags, &classes);
+println!("{}", filtered_html);
 ```
 
-- **描述**: 从URL获取HTML内容并根据指定的标签和类名进行过滤。
-- **参数**: 同`process_url`。
-- **返回值**: 过滤后的HTML字符串。
-- **行为**: 使用`reqwest`获取URL内容，使用`kuchiki`解析HTML，根据标签和类名过滤节点，并返回过滤后的HTML字符串。
+#### 4. `process_url`
 
-##### `save_filtered_html`
+**功能描述**：处理URL并保存过滤后的HTML内容。
 
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
+- `output_dir: &str`：输出目录。
+
+**示例**：
 ```rust
-fn save_filtered_html(filtered_html: &str, url: &str, output_dir: &str)
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let output_dir = "output";
+process_url(url, &tags, &classes, output_dir);
 ```
 
-- **描述**: 将过滤后的HTML内容保存到指定目录。
-- **参数**:
-  - `filtered_html`: 过滤后的HTML字符串。
-  - `url`: 原始URL字符串。
-  - `output_dir`: 输出目录路径。
-- **行为**: 生成输出文件路径，创建目录（如果不存在），创建文件并写入过滤后的HTML内容。
+#### 5. `process_url_full`
 
-##### `filter_tags`
+**功能描述**：处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径。
 
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
+- `output_dir: &str`：输出目录。
+
+**示例**：
 ```rust
-fn filter_tags(document: &NodeRef, rule: &str)
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let output_dir = "output_fullurl";
+process_url_full(url, &tags, &classes, output_dir);
 ```
 
-- **描述**: 根据指定的标签规则过滤HTML文档中的节点。
-- **参数**:
-  - `document`: HTML文档节点引用。
-  - `rule`: 标签选择器规则。
-- **行为**: 选择并移除匹配的节点。
+#### 6. `process_url_full_removeref`
 
-##### `filter_classes`
+**功能描述**：处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数。
 
+**参数**：
+- `url: &str`：目标URL。
+- `tags: &[&str]`：需要过滤的标签列表。
+- `classes: &[&str]`：需要过滤的类名列表。
+- `output_dir: &str`：输出目录。
+
+**示例**：
 ```rust
-fn filter_classes(document: &NodeRef, class: &str)
+let url = "https://example.com";
+let tags = vec!["script", "style"];
+let classes = vec!["class1", "class2"];
+let output_dir = "output_fullurl_removeref";
+process_url_full_removeref(url, &tags, &classes, output_dir);
 ```
 
-- **描述**: 根据指定的类名过滤HTML文档中的节点。
-- **参数**:
-  - `document`: HTML文档节点引用。
-  - `class`: 类名。
-- **行为**: 选择并移除包含指定类名的节点。
+#### 7. `save_filtered_html`
 
-##### `remove_empty_lines`
+**功能描述**：保存过滤后的HTML内容到指定目录。
 
+**参数**：
+- `filtered_html: &str`：过滤后的HTML内容。
+- `url: &str`：目标URL。
+- `output_dir: &str`：输出目录。
+
+**示例**：
 ```rust
-fn remove_empty_lines(html: String) -> String
+let filtered_html = "<html><body><h1>Hello, World!</h1></body></html>";
+let url = "https://example.com";
+let output_dir = "output";
+save_filtered_html(filtered_html, url, output_dir);
 ```
 
-- **描述**: 移除HTML字符串中的空行。
-- **参数**:
-  - `html`: 输入的HTML字符串。
-- **返回值**: 移除空行后的HTML字符串。
+#### 8. `filter_tags`
 
-##### `generate_output_path`
+**功能描述**：过滤指定标签。
 
+**参数**：
+- `document: &NodeRef`：HTML文档节点引用。
+- `rule: &str`：过滤规则。
+
+**示例**：
 ```rust
-fn generate_output_path(url: &str, output_dir: &str) -> String
+let content = "<html><body><script>alert('test');</script><h1>Hello, World!</h1></body></html>";
+let document = parse_html().one(content);
+filter_tags(&document, "script");
+println!("{}", document.to_string());
 ```
 
-- **描述**: 生成保存过滤后HTML文件的路径。
-- **参数**:
-  - `url`: 原始URL字符串。
-  - `output_dir`: 输出目录路径。
-- **返回值**: 输出文件路径字符串。
+#### 9. `filter_classes`
 
-#### 测试用例
+**功能描述**：过滤指定类名。
 
+**参数**：
+- `document: &NodeRef`：HTML文档节点引用。
+- `class: &str`：类名。
+
+**示例**：
+```rust
+let content = "<html><body><div class='class1'>Hello, World!</div></body></html>";
+let document = parse_html().one(content);
+filter_classes(&document, "class1");
+println!("{}", document.to_string());
+```
+
+#### 10. `update_relative_paths`
+
+**功能描述**：更新相对路径为绝对路径。
+
+**参数**：
+- `document: &NodeRef`：HTML文档节点引用。
+- `base_url: &str`：基础URL。
+
+**示例**：
+```rust
+let content = "<html><body><img src='image.jpg'/></body></html>";
+let document = parse_html().one(content);
+update_relative_paths(&document, "https://example.com");
+println!("{}", document.to_string());
+```
+
+#### 11. `remove_ref_from_urls`
+
+**功能描述**：移除URL中的引用参数。
+
+**参数**：
+- `document: &NodeRef`：HTML文档节点引用。
+
+**示例**：
+```rust
+let content = "<html><body><a href='https://example.com?ref=123'>Link</a></body></html>";
+let document = parse_html().one(content);
+remove_ref_from_urls(&document);
+println!("{}", document.to_string());
+```
+
+#### 12. `remove_empty_lines`
+
+**功能描述**：移除空行。
+
+**参数**：
+- `html: String`：HTML内容字符串。
+
+**返回值**：移除空行后的HTML内容字符串。
+
+**示例**：
+```rust
+let html = "<html>\n<body>\n<h1>Hello, World!</h1>\n</body>\n</html>";
+let cleaned_html = remove_empty_lines(html);
+println!("{}", cleaned_html);
+```
+
+#### 13. `generate_output_path`
+
+**功能描述**：生成输出路径。
+
+**参数**：
+- `url: &str`：目标URL。
+- `output_dir: &str`：输出目录。
+
+**返回值**：输出文件路径字符串。
+
+**示例**：
+```rust
+let url = "https://example.com/path/to/page";
+let output_dir = "output";
+let output_path = generate_output_path(url, output_dir);
+println!("{}", output_path);
+```
+
+### 测试函数
+
+本库还包含了一些测试函数，用于验证主要功能是否正常工作。这些测试函数可以在`tests`模块中找到。
+
+#### `test_save_html`
+
+**功能描述**：测试保存过滤后的HTML内容。
+
+**示例**：
 ```rust
 #[test]
 fn test_save_html() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output";
-
-    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "figure", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
-    let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
-
+    let tags = vec!["script", "style"];
+    let classes = vec!["class1", "class2"];
     process_url(url, &tags, &classes, output_dir);
 }
 ```
 
-- **描述**: 测试`process_url`函数，处理指定URL并保存过滤后的HTML内容到`output`目录。
-- **行为**: 调用`process_url`函数，传入URL、标签和类名，验证输出文件是否正确生成。
+#### `test_process_url_full`
+
+**功能描述**：测试处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径。
+
+**示例**：
+```rust
+#[test]
+fn test_process_url_full() {
+    let url = "https://itsfoss.com/ollama/";
+    let output_dir = "output_fullurl";
+    let tags = vec!["script", "style"];
+    let classes = vec!["class1", "class2"];
+    process_url_full(url, &tags, &classes, output_dir);
+}
+```
+
+#### `test_process_url_full_removeref`
+
+**功能描述**：测试处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数。
+
+**示例**：
+```rust
+#[test]
+fn test_process_url_full_removeref() {
+    let url = "https://itsfoss.com/ollama/";
+    let output_dir = "output_fullurl_removeref";
+    let tags = vec!["script", "style"];
+    let classes = vec!["class1", "class2"];
+    process_url_full_removeref(url, &tags, &classes, output_dir);
+}
+```
+
+### 依赖库
+
+本库依赖以下外部库：
+- `kuchiki`：用于HTML解析和操作。
+- `reqwest`：用于HTTP请求。
+
