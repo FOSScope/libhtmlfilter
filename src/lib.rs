@@ -17,6 +17,11 @@ pub fn reverse_process_url(url: &str, tags: &[&str], classes: &[&str], output_di
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
+pub fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
+    save_filtered_html(&filtered_html, url, output_dir);
+}
+
 pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
@@ -34,6 +39,31 @@ pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
             filter_classes(&document, class);
         }
     }
+
+    let filtered_html = document.to_string();
+    remove_empty_lines(filtered_html)
+}
+
+pub fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> String {
+    let response = get(url).expect("Failed to fetch URL");
+    let content = response.text().expect("Failed to read response text");
+
+    let document = parse_html().one(content);
+
+    if !tags.is_empty() {
+        for tag in tags {
+            filter_tags(&document, &format!("{}", tag));
+        }
+    }
+
+    if !classes.is_empty() {
+        for class in classes {
+            filter_classes(&document, class);
+        }
+    }
+
+    // Update relative paths to absolute paths
+    update_relative_paths(&document, url);
 
     let filtered_html = document.to_string();
     remove_empty_lines(filtered_html)
@@ -79,6 +109,29 @@ fn filter_classes(document: &NodeRef, class: &str) {
     }
 }
 
+fn update_relative_paths(document: &NodeRef, base_url: &str) {
+    let base_url = Url::parse(base_url).expect("Failed to parse base URL");
+
+    for img in document.select("img").expect("Failed to select img tags") {
+        let mut attributes = img.attributes.borrow_mut();
+        if let Some(src) = attributes.get("src") {
+            if let Ok(url) = base_url.join(src) {
+                attributes.insert("src", url.to_string());
+            }
+        }
+    }
+
+    for a in document.select("a").expect("Failed to select a tags") {
+        let mut attributes = a.attributes.borrow_mut();
+        if let Some(href) = attributes.get("href") {
+            if let Ok(url) = base_url.join(href) {
+                attributes.insert("href", url.to_string());
+            }
+        }
+    }
+
+}
+
 fn remove_empty_lines(html: String) -> String {
     html.lines()
         .filter(|line| !line.trim().is_empty())
@@ -102,8 +155,19 @@ fn test_save_html() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output";
 
-    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "figure", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
+    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
     process_url(url, &tags, &classes, output_dir);
+}
+
+#[test]
+fn test_process_url_full() {
+    let url = "https://itsfoss.com/ollama/";
+    let output_dir = "output_fullurl";
+
+    let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
+    let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
+
+    process_url_full(url, &tags, &classes, output_dir);
 }
