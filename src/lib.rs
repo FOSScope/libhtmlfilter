@@ -8,8 +8,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// 获取过滤后的HTML内容
 pub async fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
-    let response = get(url).expect("Failed to fetch URL");
-    let content = response.text().expect("Failed to read response text");
+    let response = get(url).await.expect("Failed to fetch URL");
+    let content = response.text().await.expect("Failed to read response text");
 
     let document = parse_html().one(content);
 
@@ -31,8 +31,8 @@ pub async fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> St
 
 /// 获取过滤后的HTML内容，并更新相对路径为绝对路径
 pub async fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> String {
-    let response = get(url).expect("Failed to fetch URL");
-    let content = response.text().expect("Failed to read response text");
+    let response = get(url).await.expect("Failed to fetch URL");
+    let content = response.text().await.expect("Failed to read response text");
 
     let document = parse_html().one(content);
 
@@ -57,7 +57,7 @@ pub async fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str
 
 /// 获取过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
 pub async fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], classes: &[&str]) -> String {
-    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
+    let filtered_html = get_filtered_html_fullurl(url, tags, classes).await;
     let document = parse_html().one(filtered_html);
     remove_ref_from_urls(&document);
     let filtered_html = document.to_string();
@@ -66,19 +66,19 @@ pub async fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], class
 
 /// 处理URL并保存过滤后的HTML内容
 pub async fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html(url, tags, classes);
+    let filtered_html = get_filtered_html(url, tags, classes).await;
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
 /// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径
 pub async fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html_fullurl(url, tags, classes);
+    let filtered_html = get_filtered_html_fullurl(url, tags, classes).await;
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
 /// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
 pub async fn process_url_full_removeref(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
-    let filtered_html = get_filtered_html_fullurl_removeref(url, tags, classes);
+    let filtered_html = get_filtered_html_fullurl_removeref(url, tags, classes).await;
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
