@@ -2,7 +2,7 @@
 name = "libhtmlfilter"
 edition = "2021"
 version = "0.1.2"
-authors = ["Cysnies <official@tcea.top>"]
+authors = ["Cysnies <official@tcea.top>", "FOSScope Contributors <fosscope@fosscope.org>"]
 license = "MIT"
 description = "A tool to filter html by tags and classes"
 readme = "README.md"

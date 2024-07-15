@@ -1,4 +1,8 @@
+# Generated files
 /target
 /output
 /output_fullurl
 /output_fullurl_removeref
+
+# IDE files
+/.idea

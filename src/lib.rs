@@ -1,14 +1,13 @@
 use kuchiki::traits::*;
 use kuchiki::{parse_html, NodeRef};
-use reqwest::blocking::get;
-use reqwest::Url;
+use reqwest::{get, Url};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// 获取过滤后的HTML内容
-pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
+pub async fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
 
@@ -31,7 +30,7 @@ pub fn get_filtered_html(url: &str, tags: &[&str], classes: &[&str]) -> String {
 }
 
 /// 获取过滤后的HTML内容，并更新相对路径为绝对路径
-pub fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> String {
+pub async fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let response = get(url).expect("Failed to fetch URL");
     let content = response.text().expect("Failed to read response text");
 
@@ -57,7 +56,7 @@ pub fn get_filtered_html_fullurl(url: &str, tags: &[&str], classes: &[&str]) -> 
 }
 
 /// 获取过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
-pub fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], classes: &[&str]) -> String {
+pub async fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], classes: &[&str]) -> String {
     let filtered_html = get_filtered_html_fullurl(url, tags, classes);
     let document = parse_html().one(filtered_html);
     remove_ref_from_urls(&document);
@@ -66,19 +65,19 @@ pub fn get_filtered_html_fullurl_removeref(url: &str, tags: &[&str], classes: &[
 }
 
 /// 处理URL并保存过滤后的HTML内容
-pub fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+pub async fn process_url(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
     let filtered_html = get_filtered_html(url, tags, classes);
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
 /// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径
-pub fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+pub async fn process_url_full(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
     let filtered_html = get_filtered_html_fullurl(url, tags, classes);
     save_filtered_html(&filtered_html, url, output_dir);
 }
 
 /// 处理URL并保存过滤后的HTML内容，更新相对路径为绝对路径，并移除URL中的引用参数
-pub fn process_url_full_removeref(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
+pub async fn process_url_full_removeref(url: &str, tags: &[&str], classes: &[&str], output_dir: &str) {
     let filtered_html = get_filtered_html_fullurl_removeref(url, tags, classes);
     save_filtered_html(&filtered_html, url, output_dir);
 }
@@ -188,35 +187,35 @@ fn generate_output_path(url: &str, output_dir: &str) -> String {
     format!("{}/{}_{}-{}.html", output_dir, domain, path, timestamp)
 }
 
-#[test]
-fn test_save_html() {
+#[tokio::test]
+async fn test_save_html() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output";
 
     let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
-    process_url(url, &tags, &classes, output_dir);
+    process_url(url, &tags, &classes, output_dir).await
 }
 
-#[test]
-fn test_process_url_full() {
+#[tokio::test]
+async fn test_process_url_full() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output_fullurl";
 
     let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
-    process_url_full(url, &tags, &classes, output_dir);
+    process_url_full(url, &tags, &classes, output_dir).await
 }
 
-#[test]
-fn test_process_url_full_removeref() {
+#[tokio::test]
+async fn test_process_url_full_removeref() {
     let url = "https://itsfoss.com/ollama/";
     let output_dir = "output_fullurl_removeref";
 
     let tags = vec!["script", "style", "link", "meta", "li", "desc", "title", "svg", "path", "dialog", "select", "head", "header", "foot", "footer", "ul", "nav", "button", "form", "input", "picture", "time", "h2", "h3", "h4", "i", "aside", "FreeStarVideoAdContainer", "freestar-video-parent", "reestar-video-child"];
     let classes = vec!["progress-bar", "js-menu", "social-share", "post-info__readtime", "cta__description", "cta__inner", "cta__content", "hide-mobile", "js-toc", "author-card", "related-posts"];
 
-    process_url_full_removeref(url, &tags, &classes, output_dir);
+    process_url_full_removeref(url, &tags, &classes, output_dir).await
 }
